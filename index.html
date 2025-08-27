@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>时间线演示</title>
+<style>
+ body{font-family:Arial,Helvetica,sans-serif;margin:0;padding:0;background:#f0f0f0;color:#333}
+ header{background:linear-gradient(60deg,#3f51b5,#673ab7);color:#fff;text-align:center;padding:20px 10px}
+ h1{margin:0;font-size:2rem}
+ .container{width:90%;max-width:1200px;margin:auto;padding-bottom:40px}
+ .controls{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;margin:15px 0}
+ .controls input{flex:1;padding:8px 10px;font-size:1rem;border:1px solid #ccc;border-radius:4px}
+ .filters{display:flex;gap:8px;flex-wrap:wrap}
+ .filters button{border:none;padding:6px 12px;border-radius:16px;font-size:.8rem;color:#fff;cursor:pointer;opacity:.7}
+ .filters button.active{opacity:1}
+ .timeline-wrap{position:relative;background:#fff;padding:10px;border-radius:8px;box-shadow:0 2px 10px rgba(0,0,0,0.1);overflow:hidden}
+ .timeline-view{overflow:hidden;position:relative;height:400px}
+ .timeline{position:relative;height:100%;cursor:grab}
+ .timeline:active{cursor:grabbing}
+ .axis{position:absolute;bottom:30px;height:2px;background:#ccc;width:5000px}
+ .marker{position:absolute;bottom:6px;transform:translateX(-50%);font-size:.75rem;color:#666}
+ .marker:before{content:"";position:absolute;top:-8px;left:50%;width:1px;height:6px;background:#666}
+ .events{position:absolute;top:0;height:calc(100% - 50px);width:5000px}
+ .event{position:absolute;width:12px;height:12px;border-radius:50%;cursor:pointer;transition:transform .3s}
+ .event:hover{transform:scale(1.4)}
+ .popup{position:absolute;display:none;background:#fff;border-radius:6px;box-shadow:0 2px 10px rgba(0,0,0,0.2);padding:10px;font-size:.8rem;width:260px;line-height:1.4;z-index:10}
+ .popup h3{margin:0 0 4px;font-size:1rem}
+ .popup .date{color:#777;margin-bottom:6px;font-size:.75rem}
+ .zoom{display:flex;gap:6px;margin-top:8px;justify-content:flex-end}
+ .zoom div{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:50%;background:#fff;border:1px solid #ccc;cursor:pointer;font-weight:bold}
+ @media(max-width:768px){.timeline-view{height:350px}}
+</style>
+</head>
+<body>
+<header><h1>人类历史时间线</h1></header>
+<div class="container">
+  <div class="controls">
+    <input id="search" type="text" placeholder="搜索事件...">
+    <div class="filters" id="categoryFilters"></div>
+  </div>
+  <div class="timeline-wrap">
+    <div class="timeline-view">
+      <div class="timeline" id="timeline">
+        <div class="axis" id="axis"></div>
+        <div class="events" id="events"></div>
+      </div>
+    </div>
+    <div class="zoom"><div id="zoomOut">-</div><div id="zoomIn">+</div></div>
+  </div>
+</div>
+<script>
+const categories=['cosmic','evolution','culture','empire','science','industrial','tech','sustainability'];
+const colors=['#8B4FE5','#4CAF50','#FF9800','#F44336','#2196F3','#795548','#607D8B','#009688'];
+const markers=[{year:-13800000000,label:'138亿年前'},{year:-4500000000,label:'45亿年前'},{year:-100000000,label:'1亿年前'},{year:-1000000,label:'100万年前'},{year:-10000,label:'1万年前'},{year:0,label:'公元元年'},{year:1000,label:'1000'},{year:1800,label:'1800'},{year:1900,label:'1900'},{year:2000,label:'2000'},{year:2025,label:'现在'}];
+function fYear(y){if(y<0){if(y<-1e9)return Math.abs(y/1e9).toFixed(1)+'亿年前';if(y<-1e6)return Math.abs(y/1e6).toFixed(1)+'百万年前';if(y<-1e3)return Math.abs(y/1e3).toFixed(0)+'千年前';return '公元前'+Math.abs(y)+'年'}return '公元'+y+'年'}
+function mapYear(y){const min=-13800000000,max=2025;const logMin=Math.log(Math.abs(min)+1),logMax=Math.log(max+1);const logy=Math.log(Math.abs(y)+1);return ((logy-logMin)/(logMax-logMin))*5000}
+const events=[{year:-4500000000,category:'cosmic',title:'地球形成',description:'地球开始形成...'},
+{year:-4000000000,category:'evolution',title:'最早生命',description:'原核生物出现...'},
+{year:-2500,category:'culture',title:'最早的锁',description:'古埃及使用木制门锁'},
+{year:2025,category:'sustainability',title:'未来愿景',description:'共创可持续未来'}];
+function initFilters(){const cont=document.getElementById('categoryFilters');categories.forEach((c,i)=>{const b=document.createElement('button');b.textContent=c;b.dataset.cat=c;b.className='active';b.style.background=colors[i];b.onclick=()=>{b.classList.toggle('active');render()};cont.appendChild(b)});}
+function setupMarkers(){const axis=document.getElementById('axis');axis.innerHTML='';markers.forEach(m=>{const d=document.createElement('div');d.className='marker';d.textContent=m.label;d.style.left=mapYear(m.year)+'px';axis.appendChild(d);});}
+function render(){const container=document.getElementById('events');container.innerHTML='';const act=Array.from(document.querySelectorAll('.filters button.active')).map(b=>b.dataset.cat);const q=document.getElementById('search').value.toLowerCase();events.forEach(evt=>{if(!act.includes(evt.category))return;if(q && !evt.title.toLowerCase().includes(q)&&!evt.description.toLowerCase().includes(q)&&!fYear(evt.year).includes(q))return;const dot=document.createElement('div');dot.className='event';dot.style.background=colors[categories.indexOf(evt.category)];dot.style.left=mapYear(evt.year)+'px';dot.style.top=(30+categories.indexOf(evt.category)*40)+'px';const pop=document.createElement('div');pop.className='popup';pop.innerHTML='<h3>'+evt.title+'</h3><div class="date">'+fYear(evt.year)+'</div><p>'+evt.description+'</p>';dot.appendChild(pop);dot.onclick=e=>{e.stopPropagation();document.querySelectorAll('.popup').forEach(p=>p.style.display='none');pop.style.left=e.clientX>window.innerWidth/2?'-270px':'15px';pop.style.top='20px';pop.style.display='block';};container.appendChild(dot);});}
+function initDragZoom(){const tl=document.getElementById('timeline');let dragging=false,startX,scrollL;tl.addEventListener('mousedown',e=>{dragging=true;startX=e.pageX;scrollL=tl.scrollLeft;});window.addEventListener('mousemove',e=>{if(dragging){tl.scrollLeft=scrollL-(e.pageX-startX);}});window.addEventListener('mouseup',()=>dragging=false);document.getElementById('zoomIn').onclick=()=>{const w=parseInt(document.getElementById('events').style.width||'5000')*1.2;document.getElementById('events').style.width=w+'px';document.getElementById('axis').style.width=w+'px';render();};document.getElementById('zoomOut').onclick=()=>{const w=Math.max(1000,parseInt(document.getElementById('events').style.width||'5000')/1.2);document.getElementById('events').style.width=w+'px';document.getElementById('axis').style.width=w+'px';render();};}
+document.addEventListener('DOMContentLoaded',()=>{initFilters();setupMarkers();render();initDragZoom();document.body.onclick=()=>document.querySelectorAll('.popup').forEach(p=>p.style.display='none');});
+</script>
+</body>
+</html>
